@@ -13,10 +13,6 @@ from pathlib import Path
 
 # RunPod SDK
 import runpod
-
-# FastAPI app
-from fastapi import UploadFile
-import aiofiles
 import torch
 from mokuro import MokuroGenerator
 
@@ -128,17 +124,21 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dict with processing results
     """
+    print(f"📥 Received job: {job.get('id', 'unknown')}")
+
     # Load models on first request
     load_models()
 
-    # Parse input
-    input_data = job["input"]
+    # Parse input (safe access)
+    input_data = job.get("input", {})
+    print(f"🔍 Input type: {input_data.get('type', 'unknown')}")
 
     # Get request type
     request_type = input_data.get('type', 'process_single')
 
     try:
         if request_type == 'health':
+            print("✅ Health check requested")
             return {
                 "status": "healthy",
                 "gpu": torch.cuda.get_device_name(0) if CUDA_AVAILABLE else "cpu",
@@ -162,6 +162,7 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
             # Process
             result = process_single_page(image_bytes, page_index)
 
+            print(f"✅ Successfully processed page {page_index}")
             return {
                 "status": "success",
                 "result": result
@@ -213,6 +214,7 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
                             "text_blocks": blocks
                         })
 
+            print(f"✅ Successfully processed batch of {len(results)} pages")
             return {
                 "status": "success",
                 "title": title,
@@ -227,6 +229,8 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
 
     except Exception as e:
         import traceback
+        print(f"❌ Error processing job: {str(e)}")
+        print(traceback.format_exc())
         return {
             "error": str(e),
             "traceback": traceback.format_exc(),
@@ -237,4 +241,11 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
 # Start RunPod Serverless
 if __name__ == "__main__":
     print("🚀 Starting Mokuro OCR Serverless Handler")
-    runpod.serverless.start({"handler": handler})
+    print("✅ Handler module loaded successfully")
+    try:
+        runpod.serverless.start({"handler": handler})
+    except Exception as e:
+        print(f"❌ Failed to start serverless worker: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
