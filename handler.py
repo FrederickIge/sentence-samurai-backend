@@ -225,12 +225,36 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
 
 # Start RunPod Serverless
 if __name__ == "__main__":
-    print("🚀 Starting Mokuro OCR Serverless Handler")
-    print("✅ Handler module loaded successfully")
-    try:
-        runpod.serverless.start({"handler": handler})
-    except Exception as e:
-        print(f"❌ Failed to start serverless worker: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+    import sys
+
+    # Check if we should run locally for testing
+    if len(sys.argv) > 1 and sys.argv[1] == "--local":
+        print("🚀 Running in LOCAL mode for testing")
+        print("✅ Handler module loaded successfully")
+        print("\nTo test:")
+        print("  python handler.py --local")
+        print("  python handler.py --local < /path/to/image.json")
+        print("\nImage JSON format:")
+        print('  {"image": "base64data...", "page_index": 0}')
+
+        # Read from stdin if piped
+        import select
+        if select.select([sys.stdin], [], [], 0.1)[0]:
+            import json
+            job = json.load(sys.stdin)
+            print(f"\n📥 Processing job from stdin...")
+            result = handler(job)
+            print(json.dumps(result, indent=2))
+        else:
+            print("\n✅ Local mode ready (no input provided)")
+    else:
+        # Run in RunPod serverless mode
+        print("🚀 Starting Mokuro OCR Serverless Handler")
+        print("✅ Handler module loaded successfully")
+        try:
+            runpod.serverless.start({"handler": handler})
+        except Exception as e:
+            print(f"❌ Failed to start serverless worker: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
