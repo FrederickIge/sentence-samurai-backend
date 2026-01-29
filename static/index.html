@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mokuro Server Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        .header { text-align: center; margin-bottom: 2rem; }
+        .header h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+        }
+        .status-healthy { background: #065f46; color: #6ee7b7; }
+        .status-error { background: #7f1d1d; color: #fca5a5; }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 { color: #4facfe; margin-bottom: 1rem; }
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-area:hover { border-color: #4facfe; background: rgba(79, 172, 254, 0.1); }
+        .file-list { margin-top: 1rem; }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-primary { background: linear-gradient(90deg, #4facfe, #00f2fe); color: #000; }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.1); color: #eee; }
+        .progress-bar {
+            height: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 0.25rem;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            transition: width 0.3s;
+        }
+        .progress-text { text-align: center; margin-top: 0.5rem; font-size: 0.875rem; color: #888; }
+        .hidden { display: none; }
+        .input-field {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: #eee;
+            margin-bottom: 1rem;
+        }
+        .result-links { display: flex; gap: 0.5rem; margin-top: 1rem; }
+        .result-links a {
+            padding: 0.5rem 1rem;
+            background: rgba(79, 172, 254, 0.2);
+            color: #4facfe;
+            text-decoration: none;
+            border-radius: 0.5rem;
+        }
+        .preview-frame {
+            width: 100%;
+            height: 500px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Mokuro Server Test</h1>
+            <p id="serverStatus" class="status-badge">Checking server...</p>
+        </div>
+
+        <div class="card">
+            <h2>Server Status</h2>
+            <p><strong>Endpoint:</strong> <code id="endpointUrl">-</code></p>
+            <button class="btn btn-secondary" onclick="checkHealth()">Refresh Status</button>
+        </div>
+
+        <div class="card">
+            <h2>Upload Manga Pages</h2>
+            <input type="text" id="mangaTitle" class="input-field" placeholder="Manga title (optional)">
+            <div class="upload-area" id="uploadArea">
+                <p>Drag & drop manga pages here or click to select</p>
+                <input type="file" id="fileInput" multiple accept="image/*">
+            </div>
+            <div class="file-list" id="fileList"></div>
+            <button class="btn btn-primary" id="processBtn" onclick="processManga()" disabled>Process with Mokuro</button>
+
+            <div class="progress-bar hidden" id="progressContainer">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+            <p class="progress-text hidden" id="progressText">Processing...</p>
+
+            <div class="result-area hidden" id="resultArea">
+                <h3>Processing Complete!</h3>
+                <div class="result-links">
+                    <a id="viewHtmlLink" href="#" target="_blank">View HTML</a>
+                    <a id="downloadLink" href="#" target="_blank">Download .mokuro</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card hidden" id="previewCard">
+            <h2>HTML Preview</h2>
+            <iframe id="previewFrame" class="preview-frame"></iframe>
+        </div>
+
+        <div class="card">
+            <h2>API Endpoints</h2>
+            <div style="font-family: monospace; font-size: 0.875rem; color: #888;">
+                <p>GET  /health</p>
+                <p>GET  /</p>
+                <p>POST /process-manga</p>
+                <p>GET  /job/{job_id}</p>
+                <p>GET  /html/{job_id}</p>
+                <p>GET  /download/{job_id}</p>
+            </div>
+        </div>
+    </div>
+    <script src="/static/test.js"></script>
+</body>
+</html>

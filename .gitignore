@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.pyc
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+server.log
+tunnel.log
+
+# Project specific
+outputs/
+uploads/
+*.mokuro
+_cache/
+
+# OS
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+*.orig
+BACKUP/
+
+# Deployment (keep local files local)
+*-backup.*
+*_local.*
+
+# Exclude other project files
+jidoujisho/
+SINGLE_PAGE_PROCESSING.md
