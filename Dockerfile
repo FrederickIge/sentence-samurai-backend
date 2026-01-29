@@ -1,5 +1,17 @@
 # RunPod Serverless Handler for Mokuro OCR
-FROM runpod/base:0.0.1-python3.10
+FROM python:3.10-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
 
