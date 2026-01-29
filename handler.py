@@ -35,23 +35,8 @@ def load_models():
     global mokuro_gen
     if mokuro_gen is None:
         print("Loading Mokuro models...")
-        mokuro_gen = MokuroGenerator(device=device)
+        mokuro_gen = MokuroGenerator()
         print("✅ Models loaded")
-
-    # Patch for CUDA
-    if CUDA_AVAILABLE:
-        original_init = mokuro_gen.__class__.__init__
-
-        def patched_init(self, device):
-            original_init(self, device)
-            if hasattr(self, '_manga_page_ocr'):
-                mpo = self._manga_page_ocr
-                if hasattr(mpo, 'text_detector') and hasattr(mpo.text_detector, 'model'):
-                    mpo.text_detector.model.to('cuda')
-                if hasattr(mpo, 'mocr') and hasattr(mpo.mocr, 'model'):
-                    mpo.mocr.model.to('cuda')
-
-        mokuro_gen.__class__.__init__ = patched_init
 
 
 def decode_base64_images(base64_data: str) -> list:
