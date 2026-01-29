@@ -10,7 +10,7 @@ mokuro==0.2.2
 
 # Image processing (PyTorch already in template)
 Pillow>=10.0.0
-numpy>=1.24.0
+numpy<2.0  # NumPy 1.x required for PyTorch 2.1.0 compatibility
 
 # Testing (optional)
 pytest==7.4.3
