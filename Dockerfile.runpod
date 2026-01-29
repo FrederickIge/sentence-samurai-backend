@@ -1,0 +1,33 @@
+# RunPod PyTorch Template Base
+FROM runpod/pytorch:2.1.0-cuda11.8-cudnn8-devel
+
+# Set working directory
+WORKDIR /workspace
+
+# Copy RunPod-specific requirements (PyTorch already in template)
+COPY requirements-runpod.txt .
+
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements-runpod.txt
+
+# Copy application code
+COPY main.py .
+COPY static/ ./static/ 2>/dev/null || true
+
+# Create necessary directories
+RUN mkdir -p outputs uploads
+
+# Expose port
+EXPOSE 8000
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_VISIBLE_DEVICES=0
+ENV HF_HOME=/workspace/cache
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run the server
+CMD ["python", "main.py"]
