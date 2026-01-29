@@ -11,6 +11,9 @@ from io import BytesIO
 from tempfile import TemporaryDirectory
 from pathlib import Path
 
+# RunPod SDK
+import runpod
+
 # FastAPI app
 from fastapi import UploadFile
 import aiofiles
@@ -115,15 +118,21 @@ def process_single_page(image_data: bytes, page_index: int) -> Dict[str, Any]:
         }
 
 
-def handler(event: Dict[str, Any]) -> Dict[str, Any]:
+def handler(job: Dict[str, Any]) -> Dict[str, Any]:
     """
     RunPod Serverless Handler
+
+    Args:
+        job: RunPod job object with 'input' key containing the request data
+
+    Returns:
+        Dict with processing results
     """
     # Load models on first request
     load_models()
 
     # Parse input
-    input_data = event.get('input', {})
+    input_data = job["input"]
 
     # Get request type
     request_type = input_data.get('type', 'process_single')
@@ -225,14 +234,7 @@ def handler(event: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 
-# Test locally
+# Start RunPod Serverless
 if __name__ == "__main__":
-    # Test health check
-    test_event = {
-        "input": {
-            "type": "health"
-        }
-    }
-
-    result = handler(test_event)
-    print(json.dumps(result, indent=2))
+    print("🚀 Starting Mokuro OCR Serverless Handler")
+    runpod.serverless.start({"handler": handler})

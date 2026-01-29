@@ -1,6 +1,9 @@
 # Mokuro OCR (serverless)
 mokuro==0.2.2
 
+# RunPod SDK
+runpod>=1.7.0
+
 # Image processing
 Pillow>=10.0.0
 numpy<2.0  # NumPy 1.x required for PyTorch 2.1.0 compatibility
