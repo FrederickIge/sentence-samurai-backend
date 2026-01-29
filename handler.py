@@ -83,10 +83,7 @@ def process_single_page(image_data: bytes, page_index: int) -> Dict[str, Any]:
             f.write(image_data)
 
         # Process with Mokuro
-        mokuro_gen.process_volume(
-            volume_dir=Path(temp_dir),
-            ignore_errors=False
-        )
+        mokuro_gen.process_volume(Path(temp_dir))
 
         # Read results
         mokuro_path = Path(temp_dir) / f"page_{page_index}.mokuro.json"
@@ -193,10 +190,7 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
                     image_paths.append(img_path)
 
                 # Process with Mokuro
-                mokuro_gen.process_volume(
-                    volume_dir=temp_path,
-                    ignore_errors=False
-                )
+                mokuro_gen.process_volume(temp_path)
 
                 # Collect results
                 for i, img_path in enumerate(image_paths):
