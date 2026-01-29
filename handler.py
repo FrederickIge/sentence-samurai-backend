@@ -183,17 +183,21 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
                 volume.title = Title(temp_path)  # Set title for mokuro file
                 mokuro_gen.process_volume(volume)
 
-                # Collect results
-                for i, img_path in enumerate(image_paths):
-                    mokuro_path = temp_path / f"{img_path.stem}.mokuro.json"
+                # Read the single mokuro file (created in parent of temp_dir)
+                mokuro_path = temp_path.parent / f"{temp_path.stem}.mokuro"
 
-                    if mokuro_path.exists():
-                        with open(mokuro_path, 'r') as f:
-                            mokuro_data = json.load(f)
+                if not mokuro_path.exists():
+                    print(f"⚠️  Mokuro file not found at: {mokuro_path}")
+                else:
+                    with open(mokuro_path, 'r') as f:
+                        mokuro_data = json.load(f)
 
-                        pages = mokuro_data.get('pages', [])
-                        blocks = pages[0].get('blocks', []) if pages else []
+                    # Extract all pages from the volume
+                    pages = mokuro_data.get('pages', [])
+                    print(f"📖 Found {len(pages)} pages in mokuro file")
 
+                    for i, page_data in enumerate(pages):
+                        blocks = page_data.get('blocks', [])
                         results.append({
                             "page_index": i,
                             "text_blocks": blocks
