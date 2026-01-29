@@ -15,6 +15,7 @@ from pathlib import Path
 import runpod
 import torch
 from mokuro import MokuroGenerator
+from mokuro.volume import Volume
 
 # GPU Detection
 CUDA_AVAILABLE = torch.cuda.is_available()
@@ -82,8 +83,9 @@ def process_single_page(image_data: bytes, page_index: int) -> Dict[str, Any]:
         with open(img_path, 'wb') as f:
             f.write(image_data)
 
-        # Process with Mokuro
-        mokuro_gen.process_volume(Path(temp_dir))
+        # Process with Mokuro (create Volume object)
+        volume = Volume(Path(temp_dir))
+        mokuro_gen.process_volume(volume)
 
         # Read results
         mokuro_path = Path(temp_dir) / f"page_{page_index}.mokuro.json"
@@ -189,8 +191,9 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
                         f.write(base64.b64decode(img_b64))
                     image_paths.append(img_path)
 
-                # Process with Mokuro
-                mokuro_gen.process_volume(temp_path)
+                # Process with Mokuro (create Volume object)
+                volume = Volume(temp_path)
+                mokuro_gen.process_volume(volume)
 
                 # Collect results
                 for i, img_path in enumerate(image_paths):
