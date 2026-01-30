@@ -396,3 +396,123 @@ Always pre-cache heavy model files in the Docker image for serverless deployment
 - Trade-off: Acceptable for 10x faster cold starts
 
 ---
+
+---
+
+## 12. True Cold Start Optimization - Persist Text Detector (Added 2026-01-30)
+
+### Problem: "Models Loaded" Message Was Misleading
+The logs showed:
+```
+✅ Using pre-cached models from /workspace/cache
+✅ Models loaded
+```
+
+But then immediately:
+```
+Initializing text detector
+Downloading comictextdetector.pt (took ~1.06s)
+Loading OCR model from kha-white/manga-ocr-base
+```
+
+**Root Cause:** 
+- HF models were cached ✅
+- Text detector (`comictextdetector.pt`) was NOT cached ❌
+- "Models loaded" meant "handler initialized", not "weights ready"
+- Weight materialization (264 tensors) still happened on first request
+
+### Solution: Bake Everything Into Docker Image
+
+**1. Explicitly Download Text Detector During Build:**
+```python
+# In download_models.py
+detector_url = "https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.2.1/comictextdetector.pt"
+detector_path = cache_dir / "comictextdetector.pt"
+urllib.request.urlretrieve(detector_url, detector_path)
+```
+
+**2. Preload Models at Worker Startup:**
+```python
+# In handler.py - at module level, not in handler function
+load_models()  # Preload before any requests
+
+def load_models():
+    if detector_cached and hf_cached:
+        os.environ["HF_HUB_OFFLINE"] = "1"  # Force offline mode
+    mokuro_gen = MokuroGenerator()
+```
+
+**3. Set HF_TOKEN (Optional but Recommended):**
+```dockerfile
+# In Dockerfile or RunPod template
+# ENV HF_TOKEN=your_token_here
+```
+- Set as secret env var in RunPod template
+- Prevents unauthenticated warnings
+- Reduces rate limiting
+
+### Performance Impact
+
+**Before (partial cache):**
+- Text detector download: ~1.06s
+- HF metadata requests: 50-100 HEAD/GET calls
+- Weight materialization: 5-10s on first request
+- Total first request: 10-15s
+
+**After (full cache + preload):**
+- Text detector: cached in image ✅
+- HF models: cached in image ✅
+- Preload at startup: 5-10s (worker boot)
+- First request: ~1-2s (weights ready!)
+- Subsequent requests: ~1-2s
+
+### Key Takeaways
+
+1. **"Models loaded" != "weights in VRAM"**
+   - MokuroGenerator() init is fast
+   - Weight materialization takes time
+   - Preload at worker boot, not first request
+
+2. **Cache EVERYTHING:**
+   - HF models: `/workspace/cache/hub/`
+   - Text detector: `/workspace/cache/comictextdetector.pt`
+   - Both must be in Docker image
+
+3. **Force offline mode when cache exists:**
+   ```python
+   os.environ["HF_HUB_OFFLINE"] = "1"
+   os.environ["TRANSFORMERS_OFFLINE"] = "1"
+   ```
+   - Prevents HF probing requests
+   - Ensures local-only operation
+
+4. **HF_TOKEN is worth it:**
+   - Eliminates unauthenticated warnings
+   - Faster metadata fetches
+   - No rate limiting
+
+5. **Keep 1 Worker Hot (Optional):**
+   - Set minimum instances = 1 in RunPod
+   - Completely eliminates cold starts
+   - Higher cost but instant response
+
+### Validation Checklist
+
+Good state shows:
+- ✅ No "Downloading comictextdetector.pt"
+- ✅ No "Initializing text detector"
+- ✅ No "Loading OCR model from kha-white/manga-ocr-base"
+- ✅ No "Warning: unauthenticated requests..."
+- ✅ No HF request storm on new worker
+- ✅ "Models loaded and ready" appears BEFORE first request
+- ✅ First request processes immediately in 1-2s
+
+### Docker Image Size Impact
+
+- Base image: ~150MB
+- With Python deps: ~800MB
+- With HF models: ~1.0GB
+- With text detector: ~1.1GB
+- **Total: ~1.1GB** (acceptable for 10x faster cold starts)
+
+---

@@ -5,6 +5,7 @@ Run during Docker build to cache models in the container image.
 """
 import os
 import sys
+import urllib.request
 from pathlib import Path
 
 # Set ALL cache environment variables before importing mokuro
@@ -23,17 +24,30 @@ print(f"   HF_HOME={os.environ['HF_HOME']}")
 print(f"   XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}")
 
 try:
-    # Import after setting cache directory
+    # 1. Download comictextdetector.pt explicitly
+    print("\n📥 Downloading text detector model...")
+    detector_url = "https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.2.1/comictextdetector.pt"
+    detector_path = cache_dir / "comictextdetector.pt"
+
+    if not detector_path.exists():
+        print(f"   Downloading from {detector_url}")
+        urllib.request.urlretrieve(detector_url, detector_path)
+        size_mb = detector_path.stat().st_size / (1024 * 1024)
+        print(f"   ✅ Downloaded comictextdetector.pt ({size_mb:.1f} MB)")
+    else:
+        print(f"   ✅ comictextdetector.pt already cached")
+
+    # 2. Import mokuro and download HF models
+    print("\n📥 Initializing MokuroGenerator (downloads HF models)...")
     from mokuro import MokuroGenerator
 
-    print("📥 Initializing MokuroGenerator (this will download models)...")
     mokuro_gen = MokuroGenerator()
 
-    print("✅ Models downloaded successfully!")
-    print()
-    print("📊 Cached models:")
+    print("\n✅ All models downloaded successfully!")
+    print("\n📊 Cached files:")
 
     # List cached files
+    total_size = 0
     for root, dirs, files in os.walk(cache_dir):
         level = root.replace(str(cache_dir), '').count(os.sep)
         indent = ' ' * 2 * level
@@ -42,9 +56,10 @@ try:
         for file in files:
             file_path = Path(root) / file
             size_mb = file_path.stat().st_size / (1024 * 1024)
+            total_size += size_mb
             print(f"{subindent}{file} ({size_mb:.1f} MB)")
 
-    print()
+    print(f"\n📦 Total cache size: {total_size:.1f} MB")
     print("✅ Model caching complete!")
 
 except Exception as e:

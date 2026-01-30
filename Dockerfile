@@ -44,7 +44,10 @@ COPY start.sh .
 # Set environment
 ENV PYTHONUNBUFFERED=1
 ENV CUDA_VISIBLE_DEVICES=0
-ENV HF_HOME=/workspace/cache
+
+# Optional: Set HuggingFace token to avoid rate limiting
+# Add as secret env var in RunPod template: HF_TOKEN=your_token_here
+# ENV HF_TOKEN=
 
 # Make scripts executable
 RUN chmod +x start.sh handler.py

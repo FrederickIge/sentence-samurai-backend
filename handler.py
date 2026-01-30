@@ -39,14 +39,30 @@ else:
 # Global generator (cached across requests)
 mokuro_gen = None
 
-
 def load_models():
-    """Load Mokuro models once and cache them"""
+    """Load Mokuro models once and cache them at worker startup"""
     global mokuro_gen
     if mokuro_gen is None:
         print("Loading Mokuro models...")
+
+        # Check if we have cached models
+        cache_path = Path("/workspace/cache")
+        detector_cached = (cache_path / "comictextdetector.pt").exists()
+        hf_cached = (cache_path / "hub").exists()
+
+        if detector_cached and hf_cached:
+            print("✅ Using pre-cached models from /workspace/cache")
+            # Force local-only mode to prevent HF requests
+            os.environ["HF_HUB_OFFLINE"] = "1"
+            os.environ["TRANSFORMERS_OFFLINE"] = "1"
+        else:
+            print("⚠️  Models not fully cached, will download on first use")
+
         mokuro_gen = MokuroGenerator()
-        print("✅ Models loaded")
+        print("✅ Models loaded and ready")
+
+# Preload models at worker startup (not first request)
+load_models()
 
 
 def decode_base64_images(base64_data: str) -> list:
