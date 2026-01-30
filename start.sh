@@ -4,19 +4,26 @@
 
 echo "🚀 Starting Mokuro OCR Serverless Handler"
 
-# Set cache directory
+# Set ALL cache environment variables
 export HF_HOME=/workspace/cache
+export HF_DATASETS_CACHE=/workspace/cache/datasets
+export TRANSFORMERS_CACHE=/workspace/cache/transformers
+export HUGGINGFACE_HUB_CACHE=/workspace/cache/hub
+export XDG_CACHE_HOME=/workspace/cache
 export PYTHONUNBUFFERED=1
 export CUDA_VISIBLE_DEVICES=0
 
 # Create cache directory if it doesn't exist
-mkdir -p /workspace/cache
+mkdir -p /workspace/cache/{hub,transformers,datasets}
 
-# Check if models are cached, if not, download them
-if [ ! -d "/workspace/cache/hub" ] || [ ! -d "$HOME/.cache/mokuro" ]; then
-    echo "📥 Models not cached, downloading..."
+# Verify models are cached
+if [ ! -d "/workspace/cache/hub" ]; then
+    echo "⚠️  WARNING: Models not found in cache!"
+    echo "📥 Downloading models..."
     python -c "from mokuro import MokuroGenerator; MokuroGenerator()"
     echo "✅ Models cached"
+else
+    echo "✅ Using pre-cached models from /workspace/cache"
 fi
 
 echo "✅ Handler module loaded successfully"

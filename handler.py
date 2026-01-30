@@ -11,6 +11,16 @@ from io import BytesIO
 from tempfile import TemporaryDirectory
 from pathlib import Path
 
+# IMPORTANT: Set cache paths BEFORE importing mokuro/torch
+# This ensures models are loaded from pre-cached location in Docker image
+os.environ["HF_HOME"] = "/workspace/cache"
+os.environ["HF_DATASETS_CACHE"] = "/workspace/cache/datasets"
+os.environ["TRANSFORMERS_CACHE"] = "/workspace/cache/transformers"
+os.environ["HUGGINGFACE_HUB_CACHE"] = "/workspace/cache/hub"
+
+# Also set XDG cache for mokuro text detector
+os.environ["XDG_CACHE_HOME"] = "/workspace/cache"
+
 # RunPod SDK
 import runpod
 import torch

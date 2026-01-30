@@ -7,13 +7,20 @@ import os
 import sys
 from pathlib import Path
 
-# Set cache directory before importing mokuro
+# Set ALL cache environment variables before importing mokuro
 cache_dir = Path("/workspace/cache")
 cache_dir.mkdir(parents=True, exist_ok=True)
+
 os.environ["HF_HOME"] = str(cache_dir)
+os.environ["HF_DATASETS_CACHE"] = str(cache_dir / "datasets")
+os.environ["TRANSFORMERS_CACHE"] = str(cache_dir / "transformers")
+os.environ["HUGGINGFACE_HUB_CACHE"] = str(cache_dir / "hub")
+os.environ["XDG_CACHE_HOME"] = str(cache_dir)  # For mokuro text detector
 
 print("🔧 Pre-downloading Mokuro models...")
 print(f"📁 Cache directory: {cache_dir}")
+print(f"   HF_HOME={os.environ['HF_HOME']}")
+print(f"   XDG_CACHE_HOME={os.environ['XDG_CACHE_HOME']}")
 
 try:
     # Import after setting cache directory

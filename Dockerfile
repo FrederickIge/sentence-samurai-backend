@@ -26,6 +26,13 @@ COPY download_models.py .
 
 # Pre-download and cache models in Docker image
 # This eliminates cold start delays from downloading models
+# Set environment variables during build
+ENV HF_HOME=/workspace/cache
+ENV HF_DATASETS_CACHE=/workspace/cache/datasets
+ENV TRANSFORMERS_CACHE=/workspace/cache/transformers
+ENV HUGGINGFACE_HUB_CACHE=/workspace/cache/hub
+ENV XDG_CACHE_HOME=/workspace/cache
+
 RUN python download_models.py && rm download_models.py
 
 # Copy handler
